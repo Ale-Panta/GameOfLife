@@ -143,11 +143,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Src\IOMTConsoleApp.cpp" />
+    <ClCompile Include="Src\Game\GameOfLife.cpp" />
+    <ClCompile Include="Src\Engine\IOMTConsoleApp.cpp" />
     <ClCompile Include="Src\Main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Src\IOMTConsoleApp.h" />
+    <ClInclude Include="Src\Game\GameOfLife.h" />
+    <ClInclude Include="Src\Engine\IOMTConsoleApp.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

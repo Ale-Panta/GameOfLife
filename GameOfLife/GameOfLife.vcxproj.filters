@@ -15,15 +15,21 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Src\IOMTConsoleApp.cpp">
+    <ClCompile Include="Src\Engine\IOMTConsoleApp.cpp">
       <Filter>File di origine</Filter>
     </ClCompile>
     <ClCompile Include="Src\Main.cpp">
       <Filter>File di origine</Filter>
     </ClCompile>
+    <ClCompile Include="Src\Game\GameOfLife.cpp">
+      <Filter>File di origine</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Src\IOMTConsoleApp.h">
+    <ClInclude Include="Src\Engine\IOMTConsoleApp.h">
+      <Filter>File di intestazione</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Game\GameOfLife.h">
       <Filter>File di intestazione</Filter>
     </ClInclude>
   </ItemGroup>

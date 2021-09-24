@@ -1,11 +1,11 @@
-#include "IOMTConsoleApp.h"
+#include "Game/GameOfLife.h"
 
 using namespace std;
 
 int main()
 {
-	IOMTConsoleApp app(100, 60);
+	GameOfLife app(100, 60, 2);
 	app.Init();
 
-	return 0;
+	return app.Run();
 }
