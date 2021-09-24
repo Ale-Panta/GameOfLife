@@ -8,7 +8,6 @@ IOMTConsoleApp::IOMTConsoleApp(SHORT screenWith, SHORT screenHeight)
     : mScreenWidth(screenWith)
     , mScreenHeight(screenHeight)
     , mInOldMode(0)
-    , mhOut(0)
     , mhIn(0)
     , mpScreenBuffer(nullptr)
     , mIsUpdateEnabled(false)
@@ -32,15 +31,19 @@ IOMTConsoleApp::~IOMTConsoleApp()
     delete[] mpScreenBuffer;
     delete[] mState;
     delete[] mOutput;
+
+    if (mCinThread.joinable())
+        mCinThread.join();
 }
 
 void IOMTConsoleApp::Init()
 {
-    thread cinThread(&IOMTConsoleApp::ReadCin, this);
+    mCinThread = thread(&IOMTConsoleApp::ReadCin, this);
     CreateCout();
 
     double previous = clock();
     double lag = 0.0;
+    SHORT i = 0;
     
     while (mIsApplicationRunning)
     {
@@ -55,12 +58,13 @@ void IOMTConsoleApp::Init()
     		lag -= 100.0;
     	}
     
-        // Rendering
-        WriteConsoleOutput(mhOut, mpScreenBuffer, mScreenSize, { 0, 0 }, &mClientRect);
+        WriteConsoleOutput(mhOuts[i], mpScreenBuffer, mScreenSize, { 0, 0 }, &mClientRect);
+        SetConsoleActiveScreenBuffer(mhOuts[i]);
+
+        i = (i + 1) % (sizeof(mhOuts) / sizeof(mhOuts[0]));
     }
 
-    cinThread.join();
-
+    mCinThread.join();
 }
 
 void IOMTConsoleApp::ReadCin()
@@ -227,47 +231,46 @@ void IOMTConsoleApp::Draw(SHORT x, SHORT y, SHORT character, SHORT color)
 
 void IOMTConsoleApp::CreateCout()
 {
-	CONSOLE_CURSOR_INFO cursorInfo { 1, FALSE };
-	CONSOLE_FONT_INFOEX consoleInfo { sizeof(consoleInfo), 0, 6, 6, FF_DONTCARE, FW_NORMAL };
+    const CONSOLE_CURSOR_INFO cursorInfo { 1, FALSE };
+    CONSOLE_FONT_INFOEX consoleInfo { sizeof(consoleInfo), 0, 8, 8, FF_DONTCARE, FW_NORMAL };
 
-    mhOut = CreateConsoleScreenBuffer(GENERIC_READ | GENERIC_WRITE, 0, NULL, CONSOLE_TEXTMODE_BUFFER, NULL);
+    for (SHORT i = 0; i < 2; i++)
+    {
+        mhOuts[i] = CreateConsoleScreenBuffer(GENERIC_READ | GENERIC_WRITE, 0, NULL, CONSOLE_TEXTMODE_BUFFER, NULL);
 
-    // Mode and screen buffer settings
-    if (!SetConsoleMode(mhOut, ENABLE_PROCESSED_OUTPUT))
-        ErrorExit(LPSTR("SetConsoleMode"));
+        if (mhOuts[i] == INVALID_HANDLE_VALUE)
+            ErrorExit(LPSTR("Invalid handle"));
 
-    if (!SetConsoleActiveScreenBuffer(mhOut))
-        ErrorExit(LPSTR("SetConsoleActiveScreenBuffer"));
+        // In order to set the screen buffer we need to shrink the window to the minimum size.
+        const SMALL_RECT tempWindowRect = { 0, 0, 1, 1 };
+        if (!SetConsoleWindowInfo(mhOuts[i], TRUE, &tempWindowRect))
+            ErrorExit(LPSTR("SetConsoleWindowInfo"));
 
-    // In order to set the screen buffer we need to shrink the window to the minimum size.
-    SMALL_RECT tempWindowRect = { 0, 0, 1, 1 };
-    if (!SetConsoleWindowInfo(mhOut, TRUE, &tempWindowRect))
-        ErrorExit(LPSTR("SetConsoleWindowInfo"));
+        if (!SetConsoleScreenBufferSize(mhOuts[i], mScreenSize))
+            ErrorExit(LPSTR("SetConsoleScreenBufferSize"));
 
-    if (!SetConsoleScreenBufferSize(mhOut, mScreenSize))
-        ErrorExit(LPSTR("SetConsoleScreenBufferSize"));
+        // Font settings and window size checks
+        if (!SetCurrentConsoleFontEx(mhOuts[i], FALSE, &consoleInfo))
+            ErrorExit(LPSTR("SetCurrentConsoleFontEx"));
 
-    // Font settings and window size checks
-    if (!SetCurrentConsoleFontEx(mhOut, FALSE, &consoleInfo))
-        ErrorExit(LPSTR("SetCurrentConsoleFontEx"));
+        CONSOLE_SCREEN_BUFFER_INFO consoleScreenBufferInfo;
+        if (!GetConsoleScreenBufferInfo(mhOuts[i], &consoleScreenBufferInfo))
+            ErrorExit(LPSTR("GetConsoleScreenBufferInfo"));
 
-    CONSOLE_SCREEN_BUFFER_INFO consoleScreenBufferInfo;
-    if (!GetConsoleScreenBufferInfo(mhOut, &consoleScreenBufferInfo))
-        ErrorExit(LPSTR("GetConsoleScreenBufferInfo"));
+        if (mScreenWidth > consoleScreenBufferInfo.dwMaximumWindowSize.X)
+            ErrorExit(LPSTR("Screen width or font width too big"));
 
-    if (mScreenWidth > consoleScreenBufferInfo.dwMaximumWindowSize.X)
-        ErrorExit(LPSTR("Screen width or font width too big"));
+        if (mScreenHeight > consoleScreenBufferInfo.dwMaximumWindowSize.Y)
+            ErrorExit(LPSTR("Screen height or font height too big"));
 
-    if (mScreenHeight > consoleScreenBufferInfo.dwMaximumWindowSize.Y)
-        ErrorExit(LPSTR("Screen height or font height too big"));
+        // Resetting console size
+        if (!SetConsoleWindowInfo(mhOuts[i], TRUE, &mClientRect))
+            ErrorExit(LPSTR("SetConsoleWindowInfo1"));
 
-    // Resetting console size
-    if (!SetConsoleWindowInfo(mhOut, TRUE, &mClientRect))
-        ErrorExit(LPSTR("SetConsoleWindowInfo1"));
-
-    // Cursor settings
-    if (!SetConsoleCursorInfo(mhOut, &cursorInfo))
-        ErrorExit(LPSTR("SetConsoleCursorInfo"));
+        // Cursor settings
+        if (!SetConsoleCursorInfo(mhOuts[i], &cursorInfo))
+            ErrorExit(LPSTR("SetConsoleCursorInfo"));
+    }
 }
 
 void IOMTConsoleApp::CreateCin()

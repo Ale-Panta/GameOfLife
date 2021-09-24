@@ -4,7 +4,7 @@ using namespace std;
 
 int main()
 {
-	IOMTConsoleApp app(180, 100);
+	IOMTConsoleApp app(100, 60);
 	app.Init();
 
 	return 0;

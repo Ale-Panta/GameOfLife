@@ -28,7 +28,7 @@ private:
 	bool mIsUpdateEnabled;
 	bool mIsApplicationRunning;
 
-	HANDLE mhOut;
+	HANDLE mhOuts[2];
 	HANDLE mhIn;
 
 	COORD mScreenSize;
@@ -40,6 +40,8 @@ private:
 
 	static const SHORT mNumOfEventsToRead = 16;
 	INPUT_RECORD mIrInBuf[mNumOfEventsToRead];
+
+	std::thread mCinThread;
 
 	// Game of life
 	SHORT *mOutput;
